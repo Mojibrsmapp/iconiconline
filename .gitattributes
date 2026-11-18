@@ -1,0 +1,48 @@
+# Keep legacy CRLF pages without treating CR as trailing whitespace.
+*.php whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+# The Git export is an owner-only webroot, not the repository or a client download.
+/.gitignore export-ignore
+/.gitattributes export-ignore
+/.github export-ignore
+/README.md export-ignore
+/deploy export-ignore
+/docs export-ignore
+/tests export-ignore
+/dist export-ignore
+
+# Fail safe if generated or local files accidentally get tracked again.
+.env export-ignore
+.env.* export-ignore
+*.sql export-ignore
+*.map export-ignore
+*.log export-ignore
+*.pem export-ignore
+*.key export-ignore
+*.zip export-ignore
+*.tar.gz export-ignore
+error_log export-ignore
+.startup_status export-ignore
+/config.json export-ignore
+/admin/config.json export-ignore
+/admin/pages/createLink.txt export-ignore
+/api_debug.txt export-ignore
+/error_response_log.txt export-ignore
+/index.html export-ignore
+/uploads export-ignore
+/admin/uploads export-ignore
+/lib export-ignore
+/pdf export-ignore
+/photo export-ignore
+/qr_photo export-ignore
+/smart/image export-ignore
+/assets/images/faces/user_* export-ignore
+
+/api_key/* export-ignore
+/api_key/auto_tin.txt -export-ignore
+/api_key/card_make.txt -export-ignore
+/api_key/deduction_amount.txt -export-ignore
+/api_key/recharge.txt -export-ignore
+/api_key/signToServer.txt -export-ignore
+/api_key/smartret.txt -export-ignore
+/api_key/v3_deduction_amount.txt -export-ignore

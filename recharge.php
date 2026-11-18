@@ -27,16 +27,19 @@ if ($res && $res->num_rows > 0) {
 $stmt->close();
 
 // ২. ডাটাবেজ থেকে পেমেন্ট সেটিংস লোড করা
-$payment_numbers = [
-    'bkash' => '01884057362',
-    'nagad' => '01897494691'
-];
-
+$payment_numbers = [];
 $pay_q = $conn->query("SELECT method_key, number FROM payment_settings");
-if ($pay_q && $pay_q->num_rows > 0) {
-    while ($p = $pay_q->fetch_assoc()) {
-        $payment_numbers[strtolower($p['method_key'])] = $p['number'];
+while ($payment = $pay_q->fetch_assoc()) {
+    $method = strtolower((string) $payment['method_key']);
+    $number = trim((string) $payment['number']);
+    if (in_array($method, ['bkash', 'nagad'], true) && $number !== '') {
+        $payment_numbers[$method] = $number;
     }
+}
+
+if (!isset($payment_numbers['bkash'], $payment_numbers['nagad'])) {
+    http_response_code(503);
+    exit('রিচার্জ এখন উপলব্ধ নয়। পেমেন্ট করার আগে সঠিক নম্বরের জন্য অপারেটরের সাথে যোগাযোগ করুন।');
 }
 
 // ৩. ডিপোজিট রিকোয়েস্ট সাবমিট হ্যান্ডলার
@@ -45,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_deposit'])) {
     $amount = floatval($_POST['amount'] ?? 0);
     $trx_id = trim($_POST['trx_id'] ?? '');
 
-    if (empty($method) || $amount <= 0 || empty($trx_id)) {
+    if (!isset($payment_numbers[$method]) || !is_finite($amount) || $amount <= 0 || empty($trx_id)) {
         $alert = ['type' => 'error', 'title' => 'ত্রুটি!', 'text' => 'সবগুলো তথ্য সঠিকভাবে পূরণ করুন।'];
     } else {
         // ডুপ্লিকেট TrxID চেক
@@ -222,7 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_deposit'])) {
         <!-- ১. ইনফরমেশন ব্যানার কার্ড -->
         <div class="bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200 rounded-3xl p-4 shadow-sm text-center">
             <h5 class="text-xs md:text-sm font-black text-sky-800 flex items-center justify-center gap-1.5 leading-snug">
-                <span class="text-amber-500 text-sm">⚡</span> অটোমেটিক ডিপোজিট – সাথে সাথে টাকা অ্যাড হয়ে যাবে আপনার অ্যাকাউন্টে, ২৪ ঘণ্টা ওপেন
+                <span class="text-amber-500 text-sm">⚡</span> ডিপোজিট রিকোয়েস্ট — পেমেন্ট যাচাইয়ের পর ব্যালেন্স যোগ হবে।
             </h5>
         </div>
 

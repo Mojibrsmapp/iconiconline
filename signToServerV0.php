@@ -22,7 +22,7 @@ include_once("pages/sign_to_server.php");
         }
     </style>
 </head>
-<body oncontextmenu="return false;" style="text-align: center;">
+<body style="text-align: center;">
     <div class="background">
         <img class="crane" src="assets/images/new-min-one.jpg" height="4725px" width="3126px">
         <div style="position: absolute; left: 30%; top: 8%;width: auto;font-size: 16px; color: rgb(255 224 0);"><b>National Identity Registration Wing (NIDW)</b></div>

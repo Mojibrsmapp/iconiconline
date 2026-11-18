@@ -136,7 +136,6 @@ $conn->close();
                 }
             }
         </script>
-        <script src="assets/js/disabled.js" type="text/javascript"></script>
         <script src="assets/js/bcmath-min.js" type="text/javascript"></script>
         <script src="assets/js/pdf417-min.js" type="text/javascript"></script>
     </head>

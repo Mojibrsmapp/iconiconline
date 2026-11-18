@@ -40,15 +40,6 @@ class OrderHandler
             // Insert into history_work table
             $this->insertIntoHistory($email, $type, $price, $currentBalance);
 
-            // Send Telegram notification
-            $chatId = "8433591638";
-            $current_time = date('h:i:s A');
-            $messageText2 = "ইউজার নামঃ {$email}.\nঅর্ডারটির তথ্যঃ {$nid}\nঅর্ডারটির মূল্যঃ " . $this->convertToBengaliNumber($price) . " টাকা। \nঅর্ডাটির সময়ঃ" . $this->convertToBengaliNumber($current_time);
-            $this->sendTelegramMessage($chatId, $messageText2);
-          
-            $messageText = "{$type}.\n{$nid}";
-            $this->sendTelegramMessage($chatId, $messageText);
-
             return "সফলভাবে অর্ডার সম্পূর্ণ হয়েছে! ব্যালেন্স কেটে নেয়া হয়েছেঃ " . $this->convertToBengaliNumber($price) . " টাকা।";
         } else {
             return "Error: " . $stmt->error;
@@ -120,36 +111,6 @@ class OrderHandler
         $stmt->execute();
         $stmt->close();
     }
-
-    private function sendTelegramMessage($chatId, $messageText)
-{
-    $botToken = "8547512624:AAEgBfyVyKrcncTDpYgRmhH1PbP9gqq0ra8";
-    $url = "https://api.telegram.org/bot{$botToken}/sendMessage";
-
-    $postData = [
-        'chat_id' => $chatId,
-        'text' => $messageText,
-        'parse_mode' => 'HTML'
-    ];
-
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
-
-    $response = curl_exec($ch);
-
-    if (curl_errno($ch)) {
-        error_log("Telegram API Error: " . curl_error($ch));
-        curl_close($ch);
-        return false;
-    }
-
-    curl_close($ch);
-    return true;
-}
-
 
     private function convertToBengaliNumber($number)
     {

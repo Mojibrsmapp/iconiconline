@@ -1,6 +1,5 @@
 <?php
-session_start();
-include_once("includes/configuration.php");
+require_once __DIR__ . '/includes/require_admin_session.php';
 
 // Function to generate a random string (24 characters)
 function generateRandomString($length = 24) {

@@ -1,14 +1,9 @@
-<?php 
-if(isset($_GET['token']) && isset($_GET['status'])){
-    if($_GET['token'] == "db3c8c709cc949174beea12e"){
-        header("location: ../user_list.php?msg=error&text=you can not Deactive this account beacuse this is your account");
-        exit;
-    }
+<?php
+require_once __DIR__ . '/../includes/require_admin_session.php';
+
+if (isset($_GET['token'], $_GET['status'])) {
     $token = $_GET['token'];
     $status = $_GET['status'];
-    session_start();
-    $verifToken = $_SESSION['user_token'];
-            include_once("../includes/configuration.php");
 
         // Prepare and sanitize inputs before using in SQL
         $token = mysqli_real_escape_string($conn, $token);

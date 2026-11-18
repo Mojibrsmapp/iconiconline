@@ -283,12 +283,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nameBangla'])) {
 									<div class="form-group">
 										<label>QR Link</label><br>
 										<input type="checkbox" id="qrLinkInput" name="qrLink" value="<?php echo htmlspecialchars($qrLink); ?>" onchange="handleQrLinkInputChange()"> <label for="qrLinkInput">Input</label>
-										<input type="checkbox" id="qrLink1" name="qrLink" value="https://bdris.gov.bd/certificate/verify?key=Y2p7chu0b0iI8aWymonnhfkpKoOKE3J5kRsiGb0ZVOe0SqgyoCnMtFT+wx+Ikn/O" onclick="autoSelect(1)"> <label for="qrLink1">1</label>
-										<input type="checkbox" id="qrLink2" name="qrLink" value="https://bdris.gov.bd/certificate/verify?key=5gsdKUqk6MwdcGXYQrJJ3oFDeWtXYcK8sjPw9HTPyimw/CAb4Mia41mwDYBdwU/z" onclick="autoSelect(2)"> <label for="qrLink2">2</label>
-										<input type="checkbox" id="qrLink3" name="qrLink" value="https://bdris.gov.bd/certificate/verify?key=NstWvr0h0rOGf84T/VVLyG/k4N0SH4MULThJN9NKQzrcZXdnNjfrHy3f6R3cKkcP" onclick="autoSelect(3)"> <label for="qrLink3">3</label>
-										<input type="checkbox" id="qrLink4" name="qrLink" value="https://bdris.gov.bd/certificate/verify?key=KU32mvimW7KmtS/jr0hNN1VZHRwISZmcLnrzJYmadhEkpmcxFDEqLIy0exp3OVbG" onclick="autoSelect(4)"> <label for="qrLink4">4</label>
-										<input type="checkbox" id="qrLink5" name="qrLink" value="https://bdris.gov.bd/certificate/verify?key=znKwFj1Z1NAmN1Pgt4f/wcjTogYsu7aOytY8p2pk3OvTRDJkegjZjefRlv1GgJ+u" onclick="autoSelect(5)"> <label for="qrLink5">5</label>
-										<input type="checkbox" id="qrLink6" name="qrLink" value="https://bdris.gov.bd/certificate/verify?key=S/m6tkNVXq24lDXol5XRdF6zC/FRDZq327Fk7Ur9UJX94kJHLkB5tA2nX83QsVYF" onclick="autoSelect(6)"> <label for="qrLink6">6</label>
 										<input type="text" id="qrLinkInputField" name="qrLinkInputField" class="form-control" readonly>
 									</div>
 								</div>

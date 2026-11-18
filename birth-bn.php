@@ -135,7 +135,7 @@ try {
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 	<link rel="stylesheet" href="https://cdn.rawgit.com/sh4hids/bangla-web-fonts/solaimanlipi/stylesheet.css">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.0.0/css/bootstrap.min.css" integrity="sha512-NZ19NrT58XPK5sXqXnnvtf9T5kLXSzGQlVZL9taZWeTBtXoN3xIfTdxbkQh6QSoJfJgpojRqMfhyqBAAEeiXcA==" crossorigin="anonymous" referrerpolicy="no-referrer">
-	<script>var birthRegistrationNumber = "<?php echo $birthRegistrationNumber; ?>"; document.addEventListener('contextmenu', function (e) {e.preventDefault();});document.addEventListener('keydown', function (e) {if(e.ctrlKey){e.preventDefault();}});</script>
+	<script>var birthRegistrationNumber = "<?php echo $birthRegistrationNumber; ?>";</script>
 	<link rel="stylesheet" href="assets/birth-card-files/card.css">
 	<style>@page {margin: 0;size: A4;}.bmarg{margin-top: -1px;} .bangla{font-family: SolaimanLipi!important;font-size: 17px!important;}</style>
 	<style>

@@ -129,22 +129,7 @@ include_once("pages/sign_to_server.php");
   </div>
 </body>
 <script src="assets/server/server_vs1.js"></script>
-<script disable-devtool-auto="" src="https://cdn.jsdelivr.net/npm/disable-devtool@latest"></script>
-<script src="assets/js/disabled.js"></script>
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    document.addEventListener('contextmenu', function (e) {
-      e.preventDefault();
-    });
-
-    document.onkeydown = function (e) {
-      if (e.ctrlKey && (e.key === 'u' || e.key === 'c' || e.key === 's')) {
-        e.preventDefault();
-      }
-    };
-
-
-  });
   window.onload = function () { setTimeout(wp, 500); }; function wp() { window.print(); }
 </script>
 </html>
