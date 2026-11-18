@@ -1,16 +1,12 @@
-<?php 
-define('DB_HOST','localhost');
-define('DB_USER','icon_nid');
-define('DB_PASS','icon_nid');
-define('DB_NAME','icon_nid');
+<?php
 
-// Establish database connection.
-try
-{
-$dbh = new PDO("mysql:host=".DB_HOST.";dbname=".DB_NAME,DB_USER, DB_PASS,array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES 'utf8'"));
+require_once __DIR__ . '/database_settings.php';
+
+try {
+    $db = iconic_database_settings();
+    $dsn = "mysql:host={$db['host']};port={$db['port']};dbname={$db['name']};charset=utf8mb4";
+    $dbh = new PDO($dsn, $db['user'], $db['password'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+} catch (PDOException $e) {
+    iconic_database_unavailable('connection failed');
 }
-catch (PDOException $e)
-{
-exit("Error: " . $e->getMessage());
-}
-?>
+unset($db, $dsn);

@@ -1,50 +1,6 @@
-<?php 
-session_start();
-include_once("includes/configuration.php");
-
-if (isset($_SESSION['user_token'])) {
-    $token_user = $_SESSION['user_token'];
-    
-    // image কলামসহ ডাটাবেজ থেকে ইউজারের তথ্য ফেচ করা হলো
-    $stmt = $conn->prepare("SELECT id, balance, email, name, token, mobile, image FROM users WHERE token = ?");
-    $stmt->bind_param("s", $token_user);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        $id = $row["id"];
-        $balance = $row["balance"];
-        $email = $row["email"];
-        $name = $row["name"];
-        $token = $row["token"];
-        $phone = $row["mobile"];
-        // ডাটাবেজে ছবি থাকলে সেটি লোড হবে, না থাকলে ডিফল্ট ছবি
-        $user_image = (!empty($row["image"])) ? $row["image"] : 'assets/images/faces/face8.jpg';
-    } else {
-        unset($_SESSION['user_token']);
-        unset($_SESSION['user_id']);
-        header("Location: index.php");
-        exit();
-    }
-    $stmt->close();
-} else {
-    header("Location: index.php");
-    exit();
-}
-
-$current_page = basename($_SERVER['PHP_SELF']);
-
-function getUserIP() {
-    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-        return $_SERVER['HTTP_CLIENT_IP'];
-    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        return $_SERVER['HTTP_X_FORWARDED_FOR'];
-    } else {
-        return $_SERVER['REMOTE_ADDR'];
-    }
-}
-$user_ip = getUserIP();
+<?php
+require_once __DIR__ . '/includes/user_session.php';
+$current_page = basename($_SERVER['PHP_SELF'] ?? '');
 ?>
 
 <!DOCTYPE html>

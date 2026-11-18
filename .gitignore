@@ -1,1 +1,35 @@
 *.zip
+*.tar.gz
+*.log
+error_log
+.startup_status
+.env
+.env.*
+/config.json
+/admin/config.json
+/api_debug.txt
+/error_response_log.txt
+/admin/pages/createLink.txt
+/deploy/*.local.*
+/dist/
+__pycache__/
+
+# Runtime data and user documents, not application assets.
+/uploads/
+/admin/uploads/
+/lib/uploads/
+/pdf/
+/photo/
+/qr_photo/
+/smart/image/
+/assets/images/faces/user_*
+
+# This legacy directory contains rates only. Do not add provider keys.
+/api_key/*
+!/api_key/auto_tin.txt
+!/api_key/card_make.txt
+!/api_key/deduction_amount.txt
+!/api_key/recharge.txt
+!/api_key/signToServer.txt
+!/api_key/smartret.txt
+!/api_key/v3_deduction_amount.txt

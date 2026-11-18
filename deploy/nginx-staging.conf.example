@@ -1,0 +1,69 @@
+# Example for an OWNER-ONLY staging site. Install outside the webroot.
+# Do not remove the network restriction to make this a production site.
+server {
+    listen 443 ssl;
+    server_name staging.example.invalid;
+    ssl_certificate /etc/ssl/iconiconline/staging.crt;
+    ssl_certificate_key /etc/ssl/iconiconline/staging.key;
+
+    # Replace the example IP with your trusted admin/VPN network.
+    allow 192.0.2.10;
+    deny all;
+
+    root /srv/iconiconline/staging/web;
+    index index.php;
+    autoindex off;
+    disable_symlinks on from=$document_root;
+    client_max_body_size 6m;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy no-referrer always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    # Legacy admin URLs can carry credentials in their query strings.
+    access_log off;
+
+    location ~ (^|/)\. {
+        return 404;
+    }
+    location ~* \.(?:sql|log|ini|map|pem|key|bak|zip|tar\.gz)(?:/|$) {
+        return 404;
+    }
+    location ~* /(?:error_log|config\.json|api_debug\.txt|error_response_log\.txt)(?:/|$) {
+        return 404;
+    }
+    location ~* ^/(?:deploy|docs|tests|lib|includes|admin/includes|(?:admin/)?order/classes)(?:/|$) {
+        return 404;
+    }
+
+    # This one file is a public-facing numeric price, not a credential.
+    location = /api_key/smartret.txt {
+        try_files $uri =404;
+    }
+    location ~* ^/api_key(?:/|$) {
+        return 404;
+    }
+
+    # Only newly named, image-only avatars may be served in staging.
+    location ~ "^/uploads/avatars/[a-f0-9]{32}\.(?:jpg|png|webp|gif)$" {
+        try_files $uri =404;
+    }
+    location ~* ^/(?:uploads|admin/uploads|pdf|photo|qr_photo|smart/image)(?:/|$) {
+        return 404;
+    }
+    location ~* ^/assets/images/faces/user_ {
+        return 404;
+    }
+
+    location ~ \.php$ {
+        try_files $uri =404;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_pass unix:/run/php/iconiconline-staging.sock;
+    }
+    location ~* \.(?:php[0-9]*|phar|phtml|inc)(?:/|$) {
+        return 404;
+    }
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}

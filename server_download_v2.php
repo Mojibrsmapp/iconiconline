@@ -171,7 +171,7 @@ $s_v = "V2";
         }
     </style>
 </head>
-<body oncontextmenu="return false;" style="text-align: center;">
+<body style="text-align: center;">
     <div class="background">
         <img class="crane" src="assets/images/new-min-one.jpg" height="4725px" width="3126px">
 

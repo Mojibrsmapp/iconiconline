@@ -1,5 +1,5 @@
 <?php
-include('../includes/configuration.php');
+require_once __DIR__ . '/../includes/require_admin_session.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     foreach ($_POST['reg_token'] as $id => $reg_token) {

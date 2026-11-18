@@ -111,7 +111,7 @@ if (!is_numeric($voter_no)) { $s_v = "V2"; }
         img#photo { box-shadow: 1px 1px 5px 0px #858585; }
     </style>
 </head>
-<body oncontextmenu="return false;" style="text-align: center;">
+<body style="text-align: center;">
     <div class="background">
         <img class="crane" src="assets/images/new_server_one.jpg" height="4725px" width="3126px">
         <div style="border-top: 1px solid #858585; opacity: 0.5; top: 168px; left: 33px; width: 89%; position: absolute;"></div>

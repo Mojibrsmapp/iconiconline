@@ -1,10 +1,13 @@
 <?php
-$servername = "localhost";
-$username = "icon_nid";
-$password = "icon_nid";
-$dbname = "icon_nid";
 
-//Create connection
-$conn = new mysqli($servername, $username, $password, $dbname);
-mysqli_set_charset($conn, "utf8mb4");
-?>
+require_once __DIR__ . '/database_settings.php';
+
+try {
+    $db = iconic_database_settings();
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+    $conn = new mysqli($db['host'], $db['user'], $db['password'], $db['name'], $db['port']);
+    $conn->set_charset('utf8mb4');
+} catch (mysqli_sql_exception $e) {
+    iconic_database_unavailable('connection failed');
+}
+unset($db);

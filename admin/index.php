@@ -1,8 +1,4 @@
 <?php
-// Error reporting
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
 session_start();
 
 // Admin session already thakle direct dashboard/bio page-e redirect
@@ -13,10 +9,8 @@ if (isset($_SESSION['admin_token']) && !empty($_SESSION['admin_token'])) {
 
 // Token validation
 $text_token = '';
-if (isset($_GET['admin_token']) && !empty($_GET['admin_token'])) {
+if (is_string($_GET['admin_token'] ?? null) && $_GET['admin_token'] !== '') {
     $text_token = trim($_GET['admin_token']);
-} elseif (isset($_COOKIE['admin_session_token_unique']) && !empty($_COOKIE['admin_session_token_unique'])) {
-    $text_token = trim($_COOKIE['admin_session_token_unique']);
 } else {
     include_once("404.php");
     exit();

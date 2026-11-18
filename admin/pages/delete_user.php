@@ -1,19 +1,11 @@
 <?php
-// Start the session to use session variables if needed
-session_start();
-
-// Include database configuration file
-include_once("../includes/configuration.php");
+require_once __DIR__ . '/../includes/require_admin_session.php';
 
 // Check if the token is set
 if (isset($_GET['token'])) {
     
     // Sanitize the token
     $token = mysqli_real_escape_string($conn, $_GET['token']);
-    if($token == "db3c8c709cc949174beea12e"){
-      header("Location: ../user_list.php?msg=error&text=This is your account so you can't delete this account."); 
-       exit();
-    }
 
     // Step 1: Retrieve user ID based on the token
     $sql = "SELECT id FROM users WHERE token = ?";

@@ -216,7 +216,6 @@ img#uploadAnimation {
                 </div> 
 
 
-                  <input id="ApiKey" hidden value="<?php echo  trim(file_get_contents('api_key/sign_to_server.txt')); ?>">
                  
                  <div class="text-center" style="margin:8px; color: #aaa; font-size: 14px;" bis_skin_checked="1"> আপনার একাউন্ট থেকে  <?php echo  file_get_contents('api_key/signToServer.txt'); ?> টাকা কেটে নেওয়া হবে। </div>
                </div>
